@@ -15,7 +15,7 @@ export class VolareService {
     this.mockOracle = new ethers.Contract(
       '0x5228f7dd69dde15b6c2522dedce032481dcb402b',
       mockOracleABI,
-      ethers.getDefaultProvider(),
+      ethers.getDefaultProvider('rinkeby'),
     );
 
     const manager = new ethers.Wallet(
@@ -27,10 +27,10 @@ export class VolareService {
   }
 
   public async setRealTimePrice(asset: string, price: string): Promise<any> {
-    const res = await this.mockOracle.setRealTimePrice(asset, price);
+    return await this.mockOracle.setRealTimePrice(asset, price);
   }
 
   public async getPrice(asset: string): Promise<any> {
-    const res = await this.mockOracle.getPrice(asset);
+    return await this.mockOracle.getPrice(asset);
   }
 }

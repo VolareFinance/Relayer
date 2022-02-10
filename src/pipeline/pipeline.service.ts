@@ -4,6 +4,8 @@ import { BinanceService } from '../fetcher/binance.service';
 import { VolareService } from '../feeder/volare.service';
 import { ConfigService } from '@nestjs/config';
 import { DeribitService } from '../fetcher/deribit.service';
+import { LyraService } from '../feeder/lyra.service';
+import { GreetingService } from '../feeder/greeting.service';
 
 @Injectable()
 export class PipelineService {
@@ -12,23 +14,83 @@ export class PipelineService {
     private readonly binanceService: BinanceService,
     private readonly volareSerive: VolareService,
     private readonly deribitService: DeribitService,
+    private readonly lyraService: LyraService,
+    private readonly greetingService: GreetingService,
     configService: ConfigService,
   ) {
     this.WETH = configService.get<string>('WETH');
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  // @Cron(CronExpression.EVERY_10_SECONDS)
   async fetchFromBinance() {
     const res = await this.binanceService.spot('ETH');
     const setRealTimePrice = await this.volareSerive.setRealTimePrice(
       this.WETH,
       String(Number(res.data.price) * 100),
     );
-    const settled = await this.volareSerive.getPrice(this.WETH);
+    if (setRealTimePrice.hash != undefined) {
+      console.log('successfully feeding');
+    }
+    // const settled = await this.volareSerive.getPrice(this.WETH);
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
-  async fetchFromDeribit() {
-    const res = await this.deribitService.orderBook('ETH');
+  // @Cron(CronExpression.EVERY_30_SECONDS)
+  async fetchIVFromLyra() {
+    const getListingView = await this.lyraService.getListingView(605);
+    console.log(
+      'Lyra' +
+        '  ' +
+        new Date().getTime() +
+        '  ' +
+        parseInt(getListingView[4]._hex) / 10000000000000000,
+    );
+  }
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async fetchPriceFromLyra() {
+    // 0: buy call, 1: sell call; 2: buy put; 3: sell put
+    const buyCallPrice = await this.lyraService.getPremiumForOpen(597, 0, 1);
+    const sellCallPrice = await this.lyraService.getPremiumForOpen(597, 1, 1);
+    const buyPutPrice = await this.lyraService.getPremiumForOpen(597, 2, 1);
+    const sellPutPrice = await this.lyraService.getPremiumForOpen(597, 3, 1);
+    console.log(
+      'Lyra',
+      new Date().getTime(),
+      Number(buyCallPrice[1]._hex),
+      Number(buyPutPrice[1]._hex),
+      Number(sellCallPrice[1]._hex),
+      Number(sellPutPrice[1]._hex),
+    );
+  }
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async fetchPriceFromDeribit() {
+    const callOrderBook = await this.deribitService.orderBook(
+      'ETH',
+      3000,
+      'CALL',
+    );
+    const putOrderBook = await this.deribitService.orderBook(
+      'ETH',
+      3000,
+      'PUT',
+    );
+    const spot = await this.binanceService.spot('ETH');
+    console.log(
+      'Deribit',
+      new Date().getTime(),
+      callOrderBook.data.result.best_ask_price * Number(spot.data.price),
+      putOrderBook.data.result.best_ask_price * Number(spot.data.price),
+      callOrderBook.data.result.best_bid_price * Number(spot.data.price),
+      putOrderBook.data.result.best_bid_price * Number(spot.data.price),
+    );
+  }
+
+  // @Cron(CronExpression.EVERY_30_SECONDS)
+  async fetchIVFromDeribit() {
+    const res = await this.deribitService.orderBook('ETH', 3200, 'CALL');
+    console.log(
+      'Deribit' + '  ' + new Date().getTime() + '  ' + res.data.result.mark_iv,
+    );
   }
 }
