@@ -16,7 +16,7 @@ export class GreetingService {
       '0x68d64350CD495e832B95472B6655f2A4705C209c',
       //'0xC2659bCF3aA22E6EFD04bD8133aaAAa07778F96f',
       greetingABI,
-      ethers.getDefaultProvider('rinkeby'),
+      ethers.getDefaultProvider('ropsten'),
     );
 
     // const manager = new ethers.Wallet(

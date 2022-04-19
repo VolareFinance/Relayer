@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { DeribitService } from '../fetcher/deribit.service';
 import { LyraService } from '../feeder/lyra.service';
 import { GreetingService } from '../feeder/greeting.service';
+import { BigNumber } from 'ethers';
 
 @Injectable()
 export class PipelineService {
@@ -21,15 +22,30 @@ export class PipelineService {
     this.WETH = configService.get<string>('WETH');
   }
 
-  // @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async fetchFromBinance() {
     const res = await this.binanceService.spot('ETH');
+    const latestPrice = BigNumber.from(res.data.price * 100)
+      .mul(BigNumber.from(10).pow(16))
+      .toString();
     const setRealTimePrice = await this.volareSerive.setRealTimePrice(
       this.WETH,
-      String(Number(res.data.price) * 100),
+      latestPrice,
     );
     if (setRealTimePrice.hash != undefined) {
       console.log('successfully feeding');
+    }
+    console.log(
+      Math.floor((new Date().getTime() / 1000 - 1650352554) / 300 + 20),
+    );
+    const setChainLinkRoundData = await this.volareSerive.setChainlinkRounData(
+      this.WETH,
+      Math.floor((new Date().getTime() / 1000 - 1650352554) / 30 + 20),
+      latestPrice,
+      new Date().getTime(),
+    );
+    if (setChainLinkRoundData.hash != undefined) {
+      console.log('successfully setChainLinkData');
     }
     // const settled = await this.volareSerive.getPrice(this.WETH);
   }
@@ -46,7 +62,7 @@ export class PipelineService {
     );
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  // @Cron(CronExpression.EVERY_30_SECONDS)
   async fetchPriceFromLyra() {
     // 0: buy call, 1: sell call; 2: buy put; 3: sell put
     const buyCallPrice = await this.lyraService.getPremiumForOpen(597, 0, 1);
@@ -63,7 +79,7 @@ export class PipelineService {
     );
   }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  // @Cron(CronExpression.EVERY_30_SECONDS)
   async fetchPriceFromDeribit() {
     const callOrderBook = await this.deribitService.orderBook(
       'ETH',

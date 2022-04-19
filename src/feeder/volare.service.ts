@@ -13,14 +13,14 @@ export class VolareService {
     configService: ConfigService,
   ) {
     this.mockOracle = new ethers.Contract(
-      '0x5228f7dd69dde15b6c2522dedce032481dcb402b',
+      '0x636412c67522270498a17047ec8f3fd41905d9a2',
       mockOracleABI,
-      ethers.getDefaultProvider('rinkeby'),
+      ethers.getDefaultProvider('ropsten'),
     );
 
     const manager = new ethers.Wallet(
       configService.get<string>('PRIVATE_KEY'),
-      ethers.getDefaultProvider('rinkeby'),
+      ethers.getDefaultProvider('ropsten'),
     );
 
     this.mockOracle = this.mockOracle.connect(manager);
@@ -32,5 +32,19 @@ export class VolareService {
 
   public async getPrice(asset: string): Promise<any> {
     return await this.mockOracle.getPrice(asset);
+  }
+
+  async setChainlinkRounData(
+    WETH: string,
+    roundId: number,
+    latestPrice: string,
+    timeStamp: number,
+  ) {
+    return await this.mockOracle.setChainlinkRoundData(
+      WETH,
+      roundId,
+      latestPrice,
+      timeStamp,
+    );
   }
 }
