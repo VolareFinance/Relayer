@@ -22,7 +22,7 @@ export class PipelineService {
     this.WETH = configService.get<string>('WETH');
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_2_HOURS)
   async fetchFromBinance() {
     const res = await this.binanceService.spot('ETH');
     const latestPrice = BigNumber.from(res.data.price * 100)

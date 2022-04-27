@@ -6,6 +6,7 @@ import { mockOracleABI } from '../source/mock-oracle.abi';
 
 @Injectable()
 export class VolareService {
+
   private mockOracle: Contract;
   constructor(
     private readonly httpService: HttpService,
@@ -32,6 +33,20 @@ export class VolareService {
 
   public async getPrice(asset: string): Promise<any> {
     return await this.mockOracle.getPrice(asset);
+  }
+
+  async setExpiryPriceFinalizedAllPeriodOver(
+    WETH: string,
+    date: number,
+    latestPrice: string,
+    result: boolean,
+  ) {
+    return await this.mockOracle.setExpiryPriceFinalizedAllPeriodOver(
+      WETH,
+      date,
+      latestPrice,
+      result,
+    );
   }
 
   async setChainlinkRounData(
