@@ -7,106 +7,88 @@ import { DeribitService } from '../fetcher/deribit.service';
 import { LyraService } from '../feeder/lyra.service';
 import { GreetingService } from '../feeder/greeting.service';
 import { BigNumber } from 'ethers';
+import * as moment from 'moment';
 
 @Injectable()
 export class PipelineService {
-  private readonly WETH: string;
-  constructor(
-    private readonly binanceService: BinanceService,
-    private readonly volareSerive: VolareService,
-    private readonly deribitService: DeribitService,
-    private readonly lyraService: LyraService,
-    private readonly greetingService: GreetingService,
-    configService: ConfigService,
-  ) {
-    this.WETH = configService.get<string>('WETH');
-  }
+    private readonly WETH: string;
+    private readonly USDC: string;
+    private readonly USDT: string;
+    private readonly cUSDC: string;
+    private readonly DAI: string;
+    private readonly WBTC: string;
+    private readonly AVAX: string;
 
-  @Cron(CronExpression.EVERY_2_HOURS)
-  async fetchFromBinance() {
-    const res = await this.binanceService.spot('ETH');
-    const latestPrice = BigNumber.from(res.data.price * 100)
-      .mul(BigNumber.from(10).pow(16))
-      .toString();
-    const setRealTimePrice = await this.volareSerive.setRealTimePrice(
-      this.WETH,
-      latestPrice,
-    );
-    if (setRealTimePrice.hash != undefined) {
-      console.log('successfully feeding');
+    constructor(
+        private readonly binanceService: BinanceService,
+        private readonly volareSerive: VolareService,
+        private readonly deribitService: DeribitService,
+        private readonly lyraService: LyraService,
+        private readonly greetingService: GreetingService,
+        configService: ConfigService,
+    ) {
+        this.WETH = configService.get<string>('WETH');
+        this.USDC = configService.get<string>('USDC');
+        this.USDT = configService.get<string>('USDT');
+        this.DAI = configService.get<string>('DAI');
+        this.cUSDC = configService.get<string>('cUSDC');
+        this.WBTC = configService.get<string>('WBTC');
+        this.AVAX = configService.get<string>('AVAX');
     }
-    console.log(
-      Math.floor((new Date().getTime() / 1000 - 1650352554) / 300 + 20),
-    );
-    const setChainLinkRoundData = await this.volareSerive.setChainlinkRounData(
-      this.WETH,
-      Math.floor((new Date().getTime() / 1000 - 1650352554) / 30 + 20),
-      latestPrice,
-      new Date().getTime(),
-    );
-    if (setChainLinkRoundData.hash != undefined) {
-      console.log('successfully setChainLinkData');
+
+    @Cron(CronExpression.EVERY_MINUTE)
+    async fetchFromBinance() {
+        const timestamp = Math.floor(new Date().getTime() / 1000);
+        const resETH = await this.binanceService.spot('ETH');
+        const resAVAX = await this.binanceService.spot('AVAX');
+        const latestETH = BigNumber.from(
+            Math.floor(resETH.data.price * 1000000),
+        ).toString();
+        const latestAVAX = BigNumber.from(
+            Math.floor(resAVAX.data.price * 1000000),
+        ).toString();
+        const latestUSDC = BigNumber.from(1000000).toString();
+        console.log(latestETH);
+        console.log(latestAVAX);
+        console.log(latestUSDC);
+        // const setRealTimePriceETH = await this.volareSerive.setRealTimePrice(this.WETH, latestETH);
+        // const setRealTimePriceBTC = await this.volareSerive.setRealTimePrice(this.WBTC, latestBTC);
+
+        // option ofter ends ant Friday 8am UTC
+        if (
+            new Date().getTime() / 1000 >
+            moment().startOf('week').add(5, 'days').add(16, 'hours').unix()
+        ) {
+            const setExpiryPriceFinalizedAllPeriodOver_ETH =
+                await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
+                    this.WETH,
+                    timestamp,
+                    latestETH,
+                    true,
+                );
+            if (setExpiryPriceFinalizedAllPeriodOver_ETH?.hash) {
+                console.log(setExpiryPriceFinalizedAllPeriodOver_ETH.hash);
+            }
+            const setExpiryPriceFinalizedAllPeriodOver_AVAX =
+                await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
+                    this.AVAX,
+                    timestamp,
+                    latestAVAX,
+                    true,
+                );
+            if (setExpiryPriceFinalizedAllPeriodOver_AVAX?.hash) {
+                console.log(setExpiryPriceFinalizedAllPeriodOver_AVAX.hash);
+            }
+            const setExpiryPriceFinalizedAllPeriodOver_USDC =
+                await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
+                    this.USDC,
+                    timestamp,
+                    latestUSDC,
+                    true,
+                );
+            if (setExpiryPriceFinalizedAllPeriodOver_USDC?.hash) {
+                console.log(setExpiryPriceFinalizedAllPeriodOver_USDC.hash);
+            }
+        }
     }
-    // const settled = await this.volareSerive.getPrice(this.WETH);
-  }
-
-  // @Cron(CronExpression.EVERY_30_SECONDS)
-  async fetchIVFromLyra() {
-    const getListingView = await this.lyraService.getListingView(605);
-    console.log(
-      'Lyra' +
-        '  ' +
-        new Date().getTime() +
-        '  ' +
-        parseInt(getListingView[4]._hex) / 10000000000000000,
-    );
-  }
-
-  // @Cron(CronExpression.EVERY_30_SECONDS)
-  async fetchPriceFromLyra() {
-    // 0: buy call, 1: sell call; 2: buy put; 3: sell put
-    const buyCallPrice = await this.lyraService.getPremiumForOpen(597, 0, 1);
-    const sellCallPrice = await this.lyraService.getPremiumForOpen(597, 1, 1);
-    const buyPutPrice = await this.lyraService.getPremiumForOpen(597, 2, 1);
-    const sellPutPrice = await this.lyraService.getPremiumForOpen(597, 3, 1);
-    console.log(
-      'Lyra',
-      new Date().getTime(),
-      Number(buyCallPrice[1]._hex),
-      Number(buyPutPrice[1]._hex),
-      Number(sellCallPrice[1]._hex),
-      Number(sellPutPrice[1]._hex),
-    );
-  }
-
-  // @Cron(CronExpression.EVERY_30_SECONDS)
-  async fetchPriceFromDeribit() {
-    const callOrderBook = await this.deribitService.orderBook(
-      'ETH',
-      3000,
-      'CALL',
-    );
-    const putOrderBook = await this.deribitService.orderBook(
-      'ETH',
-      3000,
-      'PUT',
-    );
-    const spot = await this.binanceService.spot('ETH');
-    console.log(
-      'Deribit',
-      new Date().getTime(),
-      callOrderBook.data.result.best_ask_price * Number(spot.data.price),
-      putOrderBook.data.result.best_ask_price * Number(spot.data.price),
-      callOrderBook.data.result.best_bid_price * Number(spot.data.price),
-      putOrderBook.data.result.best_bid_price * Number(spot.data.price),
-    );
-  }
-
-  // @Cron(CronExpression.EVERY_30_SECONDS)
-  async fetchIVFromDeribit() {
-    const res = await this.deribitService.orderBook('ETH', 3200, 'CALL');
-    console.log(
-      'Deribit' + '  ' + new Date().getTime() + '  ' + res.data.result.mark_iv,
-    );
-  }
 }

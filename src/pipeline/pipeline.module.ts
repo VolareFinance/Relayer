@@ -11,16 +11,16 @@ import { LyraService } from '../feeder/lyra.service';
 import { GreetingService } from '../feeder/greeting.service';
 
 @Module({
-  imports: [HttpModule, ScheduleModule.forRoot(), ConfigModule.forRoot()],
-  providers: [
-    GreetingService,
-    LyraService,
-    PipelineService,
-    BinanceService,
-    VolareService,
-    DeribitService,
-    ethers.providers.BaseProvider,
-    ConfigService,
-  ],
+    imports: [HttpModule, ScheduleModule.forRoot(), ConfigModule.forRoot()],
+    providers: [
+        GreetingService,
+        LyraService,
+        PipelineService,
+        BinanceService,
+        VolareService,
+        DeribitService,
+        ethers.providers.BaseProvider,
+        ConfigService,
+    ],
 })
 export class PipelineModule {}
