@@ -36,18 +36,18 @@ export class PipelineService {
         this.AVAX = configService.get<string>('AVAX');
     }
 
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_10_MINUTES)
     async fetchFromBinance() {
         const timestamp = Math.floor(new Date().getTime() / 1000);
         const resETH = await this.binanceService.spot('ETH');
         const resAVAX = await this.binanceService.spot('AVAX');
         const latestETH = BigNumber.from(
-            Math.floor(resETH.data.price * 1000000),
+            Math.floor(resETH.data.price * 100000000),
         ).toString();
         const latestAVAX = BigNumber.from(
-            Math.floor(resAVAX.data.price * 1000000),
+            Math.floor(resAVAX.data.price * 100000000),
         ).toString();
-        const latestUSDC = BigNumber.from(1000000).toString();
+        const latestUSDC = BigNumber.from(100000000).toString();
         console.log(latestETH);
         console.log(latestAVAX);
         console.log(latestUSDC);
@@ -57,7 +57,13 @@ export class PipelineService {
         // option ofter ends ant Friday 8am UTC
         if (
             new Date().getTime() / 1000 >
-            moment().startOf('week').add(5, 'days').add(16, 'hours').unix()
+                moment()
+                    .startOf('week')
+                    .add(5, 'days')
+                    .add(16, 'hours')
+                    .unix() &&
+            new Date().getTime() / 1000 <
+                moment().startOf('week').add(5, 'days').add(17, 'hours').unix()
         ) {
             const setExpiryPriceFinalizedAllPeriodOver_ETH =
                 await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
