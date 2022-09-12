@@ -48,9 +48,6 @@ export class PipelineService {
             Math.floor(resAVAX.data.price * 100000000),
         ).toString();
         const latestUSDC = BigNumber.from(100000000).toString();
-        console.log(latestETH);
-        console.log(latestAVAX);
-        console.log(latestUSDC);
         // const setRealTimePriceETH = await this.volareSerive.setRealTimePrice(this.WETH, latestETH);
         // const setRealTimePriceBTC = await this.volareSerive.setRealTimePrice(this.WBTC, latestBTC);
 
@@ -60,15 +57,15 @@ export class PipelineService {
                 moment()
                     .startOf('week')
                     .add(5, 'days')
-                    .add(16, 'hours')
+                    .add(8, 'hours')
                     .unix() &&
             new Date().getTime() / 1000 <
-                moment().startOf('week').add(5, 'days').add(17, 'hours').unix()
+                moment().startOf('week').add(5, 'days').add(9, 'hours').unix()
         ) {
             const setExpiryPriceFinalizedAllPeriodOver_ETH =
                 await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
                     this.WETH,
-                    timestamp,
+                    moment().startOf('week').add(5,'days').add(8,'hours').unix(),
                     latestETH,
                     true,
                 );
@@ -78,7 +75,7 @@ export class PipelineService {
             const setExpiryPriceFinalizedAllPeriodOver_AVAX =
                 await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
                     this.AVAX,
-                    timestamp,
+                    moment().startOf('week').add(5,'days').add(8,'hours').unix(),
                     latestAVAX,
                     true,
                 );
@@ -88,7 +85,7 @@ export class PipelineService {
             const setExpiryPriceFinalizedAllPeriodOver_USDC =
                 await this.volareSerive.setExpiryPriceFinalizedAllPeriodOver(
                     this.USDC,
-                    timestamp,
+                    moment().startOf('week').add(5,'days').add(8,'hours').unix(),
                     latestUSDC,
                     true,
                 );
